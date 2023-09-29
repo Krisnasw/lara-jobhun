@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Clients\ApiResponse;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Http\Request;
 use App\Models\Todo;
 
@@ -16,10 +18,9 @@ class TodoController extends Controller
     public function index()
     {
         $todos = Todo::all();
-        return response()->json([
-            'status' => 'success',
+        return new ApiResponse([
             'message' => 'Retrieved list',
-            'data' => $todos,
+            'todo' => $todos,
         ]);
     }
 
@@ -35,18 +36,29 @@ class TodoController extends Controller
             'description' => $request->description,
         ]);
 
-        return response()->json([
-            'status' => 'success',
+        return new ApiResponse([
             'message' => 'Todo created successfully',
-            'data' => $todo,
+            'todo' => $todo,
         ]);
     }
 
     public function show($id)
     {
-        $todo = Todo::find($id);
-        return response()->json([
-            'status' => 'success',
+        // Check if the data exists in the cache
+        $cacheKey = 'todo_' . $id;
+        $todo = Redis::get($cacheKey);
+
+        if ($todo === null) {
+            // If the data is not in the cache, retrieve it from the database
+            $todo = Todo::find($id);
+            // Store the serialized data in Redis
+            Redis::set($cacheKey, json_encode($todo));
+        } else {
+            // If the data is in the cache, deserialize it back into an object
+            $todo = json_decode($todo);
+        }
+
+        return new ApiResponse([
             'todo' => $todo,
         ]);
     }
@@ -63,8 +75,7 @@ class TodoController extends Controller
         $todo->description = $request->description;
         $todo->save();
 
-        return response()->json([
-            'status' => 'success',
+        return new ApiResponse([
             'message' => 'Todo updated successfully',
             'data' => $todo,
         ]);
@@ -75,10 +86,9 @@ class TodoController extends Controller
         $todo = Todo::find($id);
         $todo->delete();
 
-        return response()->json([
-            'status' => 'success',
+        return new ApiResponse([
             'message' => 'Todo deleted successfully',
-            'data' => $todo,
+            'todo' => $todo,
         ]);
     }
 }

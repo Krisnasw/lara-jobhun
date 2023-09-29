@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Clients\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -32,15 +33,13 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
-        return response()->json([
-                'status' => 'success',
-                'user' => $user,
-                'authorization' => [
-                    'token' => $token,
-                    'type' => 'bearer',
-                ]
-            ]);
-
+        return new ApiResponse([
+            'user' => $user,
+            'authorization' => [
+                'token' => $token,
+                'type' => 'bearer',
+            ]
+        ], 200, 'Successfully logged in');
     }
 
     public function register(Request $request)
@@ -58,30 +57,26 @@ class AuthController extends Controller
         ]);
 
         $token = Auth::login($user);
-        return response()->json([
-            'status' => 'success',
-            'message' => 'User created successfully',
+        return new ApiResponse([
             'user' => $user,
             'authorization' => [
                 'token' => $token,
                 'type' => 'bearer',
             ]
-        ]);
+        ], 200, 'Successfully registered');
     }
 
     public function logout()
     {
         Auth::logout();
-        return response()->json([
-            'status' => 'success',
+        return new ApiResponse([
             'message' => 'Successfully logged out',
-        ]);
+        ], 200, 'Successfully logout');
     }
 
     public function refresh()
     {
-        return response()->json([
-            'status' => 'success',
+        return new ApiResponse([
             'user' => Auth::user(),
             'authorization' => [
                 'token' => Auth::refresh(),
