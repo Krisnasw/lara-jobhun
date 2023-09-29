@@ -2,8 +2,8 @@
 
 namespace App\Clients;
 
-use Illuminate\Support\Facades\Redis;
 use Closure;
+use Illuminate\Support\Facades\Redis;
 
 class SingleflightClient
 {

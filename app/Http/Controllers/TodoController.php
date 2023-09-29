@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Clients\ApiResponse;
+use App\Clients\SingleflightClient;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Http\Request;
 use App\Models\Todo;
@@ -17,10 +18,27 @@ class TodoController extends Controller
 
     public function index()
     {
-        $todos = Todo::all();
+        $key = 'get-all-todo';
+
+        $result = SingleflightClient::run($key, function () {
+            return Todo::all();
+        });
+
+        // Check if the result is false, indicating a cache miss
+        if ($result === false) {
+            // Handle cache miss scenario
+            // Perform the Todo::all() query and return the result
+            $result = Todo::all();
+
+            // Cache the result
+            SingleflightClient::run($key, function () use ($result) {
+                return $result;
+            });
+        }
+
         return new ApiResponse([
             'message' => 'Retrieved list',
-            'todo' => $todos,
+            'todo' => $result,
         ]);
     }
 
